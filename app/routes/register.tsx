@@ -1,4 +1,4 @@
-import { ActionFunction, redirect } from "@remix-run/node";
+import { ActionFunction, json, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { supabaseClient } from "~/server/supabase.server";
 import type { definitions } from "~/types/supabase";
@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
 import { vaildatePassword, validateUserName } from "~/server/userUtils.server";
 import { badRequest, unexpectedError } from "~/server/utils.server";
+import { nanoid } from "nanoid";
 
 type ActionData = {
   formError?: string;
@@ -48,41 +49,40 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
-  if (data.length === 0) {
+  if (data.length !== 0) {
     return badRequest({
       fieldErrors: {
         password: undefined,
-        userName: "Please provide a valid username",
+        userName: "Provided username already has an account associated with it",
       },
     });
   }
 
-  const isCorrectPassword = await bcrypt.compare(
-    password,
-    data[0].passwordHash
-  );
+  const passwordHash = await bcrypt.hash(password, 10);
+  const userId = nanoid();
 
-  if (!isCorrectPassword) {
-    return badRequest({
-      fieldErrors: {
-        userName: undefined,
-        password: "Password provided does not match username",
-      },
+  const { error } = await supabaseClient
+    .from<definitions["Users"]>("Users")
+    .insert({ name: userName, passwordHash, userId });
+
+  if (error !== null) {
+    return unexpectedError<ActionData>({
+      formError: "Something is wrong with servers please try agin later",
     });
   }
 
   return redirect(redirectTo);
 };
 
-export default function LoginRoute() {
+export default function RegisterRoute() {
   const data = useActionData<ActionData>();
   return (
     <div className="my-10">
       <Form method="post" className="grid place-content-center">
         <GetUserNameAndPassword
-          logInType="Login"
-          formError={data?.formError}
+          logInType="Register"
           fieldErrors={data?.fieldErrors}
+          formError={data?.formError}
         />
       </Form>
     </div>
