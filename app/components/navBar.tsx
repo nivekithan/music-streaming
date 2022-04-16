@@ -17,6 +17,7 @@ export const NavBar = () => {
           </a>
         </li>
         <li className="mx-2 grid place-content-center">
+          {}
           <button className="bg-blue-600 px-2 py-1 rounded">
             {isLogged ? "Logout" : "Log In"}
           </button>

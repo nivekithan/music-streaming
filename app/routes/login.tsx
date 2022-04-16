@@ -1,11 +1,15 @@
 import { ActionFunction, redirect } from "@remix-run/node";
-import { Form, useActionData } from "@remix-run/react";
+import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { supabaseClient } from "~/server/supabase.server";
 import type { definitions } from "~/types/supabase";
 import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
-import { vaildatePassword, validateUserName } from "~/server/userUtils.server";
+import {
+  vaildatePassword,
+  validateUserName,
+} from "~/server/userSession.server";
 import { badRequest, unexpectedError } from "~/server/utils.server";
+import { getCommitedUserIdSession } from "~/server/userSession.server";
 
 type ActionData = {
   formError?: string;
@@ -39,7 +43,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   const { data } = await supabaseClient
     .from<definitions["Users"]>("Users")
-    .select("name")
+    .select("name,passwordHash,userId")
     .eq("name", userName);
 
   if (data === null) {
@@ -71,10 +75,15 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
-  return redirect(redirectTo);
+  const userId = data[0].userId;
+  const userIdSession = await getCommitedUserIdSession(userId);
+
+  return redirect(redirectTo, { headers: { "Set-Cookie": userIdSession } });
 };
 
 export default function LoginRoute() {
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
   const data = useActionData<ActionData>();
   return (
     <div className="my-10">
@@ -83,6 +92,7 @@ export default function LoginRoute() {
           logInType="Login"
           formError={data?.formError}
           fieldErrors={data?.fieldErrors}
+          redirectTo={redirectTo === null ? undefined : redirectTo}
         />
       </Form>
     </div>

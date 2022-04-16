@@ -1,10 +1,14 @@
 import { ActionFunction, json, redirect } from "@remix-run/node";
-import { Form, useActionData } from "@remix-run/react";
+import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { supabaseClient } from "~/server/supabase.server";
 import type { definitions } from "~/types/supabase";
 import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
-import { vaildatePassword, validateUserName } from "~/server/userUtils.server";
+import {
+  getCommitedUserIdSession,
+  vaildatePassword,
+  validateUserName,
+} from "~/server/userSession.server";
 import { badRequest, unexpectedError } from "~/server/utils.server";
 import { nanoid } from "nanoid";
 
@@ -71,10 +75,15 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
-  return redirect(redirectTo);
+  const userIdSession = await getCommitedUserIdSession(userId);
+
+  return redirect(redirectTo, { headers: { "Set-Cookie": userIdSession } });
 };
 
 export default function RegisterRoute() {
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
+
   const data = useActionData<ActionData>();
   return (
     <div className="my-10">
@@ -83,6 +92,7 @@ export default function RegisterRoute() {
           logInType="Register"
           fieldErrors={data?.fieldErrors}
           formError={data?.formError}
+          redirectTo={redirectTo === null ? undefined : redirectTo}
         />
       </Form>
     </div>

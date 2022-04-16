@@ -7,13 +7,20 @@ export type LoginProps = {
     userName: string | undefined;
     password: string | undefined;
   };
+  redirectTo?: string;
 };
 
 export const GetUserNameAndPassword = ({
   logInType,
   formError,
-  fieldErrors: filedErrors,
+  fieldErrors,
+  redirectTo,
 }: LoginProps) => {
+  const redirectSearchParams =
+    redirectTo === undefined
+      ? new URLSearchParams()
+      : new URLSearchParams([["redirectTo", redirectTo]]);
+
   return (
     <div className="max-w-md shadow-lg rounded-lg">
       {formError === undefined ? null : (
@@ -46,8 +53,8 @@ export const GetUserNameAndPassword = ({
                 type="text"
                 className="rounded-md border-2 border-gray-400 px-2 py-1 focus:outline-2 focus:outline-blue-400 min-w-full"
               />
-              {filedErrors?.userName === undefined ? null : (
-                <p className="text-red-600 text-sm">{filedErrors.userName}</p>
+              {fieldErrors?.userName === undefined ? null : (
+                <p className="text-red-600 text-sm">{fieldErrors.userName}</p>
               )}
             </div>
             <label htmlFor="password-input">Password</label>
@@ -58,8 +65,8 @@ export const GetUserNameAndPassword = ({
                 type="password"
                 className="rounded-md border-2 border-gray-400 px-2 py-1 focus:outline-2 focus:outline-blue-400"
               />
-              {filedErrors?.password === undefined ? null : (
-                <p className="text-red-600 text-sm">{filedErrors.password}</p>
+              {fieldErrors?.password === undefined ? null : (
+                <p className="text-red-600 text-sm">{fieldErrors.password}</p>
               )}
             </div>
           </div>
@@ -75,7 +82,11 @@ export const GetUserNameAndPassword = ({
               ? "Dont have an account? "
               : "Already have an account "}
             <Link
-              to={logInType === "Login" ? "/register" : "/login"}
+              to={
+                logInType === "Login"
+                  ? `/register?${redirectSearchParams}`
+                  : `/login?${redirectSearchParams}`
+              }
               className="text-blue-500 cursor-pointer hover:text-blue-700"
             >
               {logInType === "Login" ? "Sign Up" : "Log in"}
