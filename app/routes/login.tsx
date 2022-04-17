@@ -1,15 +1,23 @@
-import { ActionFunction, redirect } from "@remix-run/node";
+import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
 import { supabaseClient } from "~/server/supabase.server";
 import type { definitions } from "~/types/supabase";
 import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
 import {
+  getUserId,
+  ifLoggedInRedirect,
   vaildatePassword,
   validateUserName,
 } from "~/server/userSession.server";
 import { badRequest, unexpectedError } from "~/server/utils.server";
 import { getCommitedUserIdSession } from "~/server/userSession.server";
+
+export const loader: LoaderFunction = async ({ request }) => {
+  await ifLoggedInRedirect(request);
+
+  return null;
+};
 
 type ActionData = {
   formError?: string;

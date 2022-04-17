@@ -49,3 +49,25 @@ export const requireUserId = async (request: Request) => {
 
   return userId;
 };
+
+export const logout = async (request: Request) => {
+  const session = await getUserSession(request);
+
+  return redirect("/login", {
+    headers: { "Set-Cookie": await sessionStorage.destroySession(session) },
+  });
+};
+
+// if the user is loggedIn, it will throw redirect
+
+export const ifLoggedInRedirect = async (request: Request) => {
+  const userId = await getUserId(request);
+  if (userId === null) return;
+
+  const url = new URL(request.url);
+  const searchParams = url.searchParams;
+
+  const redirectTo = searchParams.get("redirectTo");
+
+  throw redirect(redirectTo === null ? "/" : redirectTo);
+};
