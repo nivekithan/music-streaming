@@ -1,19 +1,56 @@
 import { PrismaClient } from "@prisma/client";
 import { getUserId, logout, requireUserId } from "./userSession.server";
 
-export const prisma = new PrismaClient();
+
+export let prisma : PrismaClient;
+
+declare global {
+  var __db: PrismaClient | undefined;
+}
+
+// this is needed because in development we don't want to restart
+// the server with every change, but we want to make sure we don't
+// create a new connection to the DB with every change either.
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient();
+} else {
+  if (!global.__db) {
+    global.__db = new PrismaClient();
+  }
+  prisma = global.__db;
+}
 
 export const getUserName = async (request: Request) => {
   const userId = await requireUserId(request);
-  const record = await prisma.users.findUnique({
+  const user = await prisma.users.findUnique({
     where: { userId },
     select: { name: true },
   });
 
-  if (record === null) {
+  if (user === null) {
     throw await logout(request);
   }
 
+  return user.name;
+};
 
-  return record.name;
+export const requirePlaylists = async (userId: string, request: Request) => {
+  const userPlaylists = await getPlaylists(userId);
+
+  if (userPlaylists === null) {
+    throw await logout(request);
+  }
+
+  return userPlaylists;
+};
+
+export const getPlaylists = async (userId: string) => {
+  const userPlaylist = await prisma.users.findUnique({
+    where: { userId },
+    select: { playlists: true },
+  });
+
+  if (userPlaylist === null) return null;
+
+  return userPlaylist.playlists;
 };

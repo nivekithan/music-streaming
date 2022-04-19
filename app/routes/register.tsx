@@ -58,11 +58,7 @@ export const action: ActionFunction = async ({ request }) => {
   const isUsernameAlreadyInUse = await prisma.users.findUnique({
     where: { name: userName },
     select: {
-      created_at: false,
-      id: false,
       name: true,
-      passwordHash: false,
-      userId: false,
     },
   });
 
