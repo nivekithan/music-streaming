@@ -1,7 +1,5 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
-import { supabaseClient } from "~/server/supabase.server";
-import type { definitions } from "~/types/supabase";
 import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
 import {
@@ -12,6 +10,7 @@ import {
 } from "~/server/userSession.server";
 import { badRequest, unexpectedError } from "~/server/utils.server";
 import { getCommitedUserIdSession } from "~/server/userSession.server";
+import { prisma } from "~/server/prisma.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
   await ifLoggedInRedirect(request);
@@ -49,18 +48,12 @@ export const action: ActionFunction = async ({ request }) => {
     return badRequest({ fieldErrors });
   }
 
-  const { data } = await supabaseClient
-    .from<definitions["Users"]>("Users")
-    .select("name,passwordHash,userId")
-    .eq("name", userName);
+  const user = await prisma.users.findUnique({
+    where: { name: userName },
+    select: { passwordHash: true, userId: true },
+  });
 
-  if (data === null) {
-    return unexpectedError({
-      formError: "Something is wrong with servers please try again later",
-    });
-  }
-
-  if (data.length === 0) {
+  if (user === null) {
     return badRequest({
       fieldErrors: {
         password: undefined,
@@ -69,10 +62,7 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
-  const isCorrectPassword = await bcrypt.compare(
-    password,
-    data[0].passwordHash
-  );
+  const isCorrectPassword = await bcrypt.compare(password, user.passwordHash);
 
   if (!isCorrectPassword) {
     return badRequest({
@@ -83,7 +73,7 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
-  const userId = data[0].userId;
+  const userId = user.userId;
   const userIdSession = await getCommitedUserIdSession(userId);
 
   return redirect(redirectTo, { headers: { "Set-Cookie": userIdSession } });
@@ -97,7 +87,7 @@ export default function LoginRoute() {
     <div className="my-10">
       <Form method="post" className="grid place-content-center">
         <GetUserNameAndPassword
-          logInType="Login"
+          actionType="Login"
           formError={data?.formError}
           fieldErrors={data?.fieldErrors}
           redirectTo={redirectTo === null ? undefined : redirectTo}

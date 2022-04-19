@@ -5,7 +5,7 @@ import {
   redirect,
 } from "@remix-run/node";
 import { Form, useActionData, useSearchParams } from "@remix-run/react";
-import { supabaseClient } from "~/server/supabase.server";
+import { prisma } from "~/server/prisma.server";
 import type { definitions } from "~/types/supabase";
 import bcrypt from "bcryptjs";
 import { GetUserNameAndPassword } from "~/components/getUsernameAndPassword";
@@ -55,18 +55,18 @@ export const action: ActionFunction = async ({ request }) => {
     return badRequest({ fieldErrors });
   }
 
-  const { data } = await supabaseClient
-    .from<definitions["Users"]>("Users")
-    .select("name")
-    .eq("name", userName);
+  const isUsernameAlreadyInUse = await prisma.users.findUnique({
+    where: { name: userName },
+    select: {
+      created_at: false,
+      id: false,
+      name: true,
+      passwordHash: false,
+      userId: false,
+    },
+  });
 
-  if (data === null) {
-    return unexpectedError({
-      formError: "Something is wrong with servers please try again later",
-    });
-  }
-
-  if (data.length !== 0) {
+  if (isUsernameAlreadyInUse !== null) {
     return badRequest({
       fieldErrors: {
         password: undefined,
@@ -78,15 +78,9 @@ export const action: ActionFunction = async ({ request }) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const userId = nanoid();
 
-  const { error } = await supabaseClient
-    .from<definitions["Users"]>("Users")
-    .insert({ name: userName, passwordHash, userId });
-
-  if (error !== null) {
-    return unexpectedError<ActionData>({
-      formError: "Something is wrong with servers please try agin later",
-    });
-  }
+  const createdUser = await prisma.users.create({
+    data: { name: userName, userId, passwordHash },
+  });
 
   const userIdSession = await getCommitedUserIdSession(userId);
 
@@ -102,7 +96,7 @@ export default function RegisterRoute() {
     <div className="my-10">
       <Form method="post" className="grid place-content-center">
         <GetUserNameAndPassword
-          logInType="Register"
+          actionType="Register"
           fieldErrors={data?.fieldErrors}
           formError={data?.formError}
           redirectTo={redirectTo === null ? undefined : redirectTo}

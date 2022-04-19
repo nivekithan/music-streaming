@@ -1,12 +1,12 @@
-import { LoaderFunction } from "@remix-run/node";
+import { LoaderFunction, redirect } from "@remix-run/node";
 import { Outlet } from "@remix-run/react";
-import { NavBar } from "~/components/navBar";
-import { requireUserId } from "~/server/userSession.server";
+import { getUserName } from "~/server/prisma.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const userId = await requireUserId(request);
+  const userName = await getUserName(request);
 
-  return null;
+
+  return redirect(`/${userName}`);
 };
 
 export default function Index() {

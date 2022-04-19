@@ -1,7 +1,7 @@
 import { Link } from "@remix-run/react";
 
 export type LoginProps = {
-  logInType: "Login" | "Register";
+  actionType: "Login" | "Register";
   formError?: string;
   fieldErrors?: {
     userName: string | undefined;
@@ -11,7 +11,7 @@ export type LoginProps = {
 };
 
 export const GetUserNameAndPassword = ({
-  logInType,
+  actionType,
   formError,
   fieldErrors,
   redirectTo,
@@ -34,10 +34,10 @@ export const GetUserNameAndPassword = ({
         <div className="flex flex-col gap-y-7">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-2xl font-bold">
-              {logInType === "Login" ? "Login" : "Register"}
+              {actionType === "Login" ? "Login" : "Register"}
             </h2>
             <p className="text-sm text-gray-600">
-              {logInType === "Login"
+              {actionType === "Login"
                 ? "Become a member -- so that you can listen to your music from anywhere"
                 : "Register to your account -- so that you can continue listen to your music from anywhere"}
             </p>
@@ -72,24 +72,28 @@ export const GetUserNameAndPassword = ({
           </div>
           <input
             type="submit"
-            value="Become a member"
+            value={
+              actionType === "Login"
+                ? "Login to your account"
+                : "Become a member"
+            }
             className="rounded-md bg-emerald-500 px-3 py-2 text-white cursor-pointer hover:bg-emerald-700 focus:outline-2 focus:outline-blue-400 "
           />
 
           <div className="border-b-2 border-gray-200"></div>
           <p className="mx-auto text-sm">
-            {logInType === "Login"
+            {actionType === "Login"
               ? "Dont have an account? "
               : "Already have an account "}
             <Link
               to={
-                logInType === "Login"
+                actionType === "Login"
                   ? `/register?${redirectSearchParams}`
                   : `/login?${redirectSearchParams}`
               }
               className="text-blue-500 cursor-pointer hover:text-blue-700"
             >
-              {logInType === "Login" ? "Sign Up" : "Log in"}
+              {actionType === "Login" ? "Sign Up" : "Log in"}
             </Link>
           </p>
         </div>
