@@ -35,38 +35,53 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
 type ActionData = {
   newPlayListError?: string;
-
-  newPlayListValue: string;
+  actionError?: string;
 };
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const newPlaylistName = formData.get("newPlaylist");
-
-  if (newPlaylistName === null || typeof newPlaylistName !== "string")
-    return badRequest<ActionData>({
-      newPlayListError: "Enter valid playlist name",
-      newPlayListValue: "",
-    });
-
   const userId = await requireUserId(request);
 
-  const isPlaylistNameAlreadyPresent = await prisma.playlists.findFirst({
-    where: { usersId: userId, name: newPlaylistName },
-  });
+  const actionType = formData.get("actionType");
 
-  if (isPlaylistNameAlreadyPresent !== null) {
+  if (actionType === null || typeof actionType !== "string")
     return badRequest<ActionData>({
-      newPlayListError: `There is already playlist with name ${newPlaylistName}, Please choose another name`,
-      newPlayListValue: newPlaylistName,
+      actionError: "Expected actionType to be also sent",
     });
+
+  if (actionType === "createPlaylist") {
+    const newPlaylistName = formData.get("newPlaylist");
+
+    if (
+      newPlaylistName === null ||
+      typeof newPlaylistName !== "string" ||
+      newPlaylistName === ""
+    )
+      return badRequest<ActionData>({
+        newPlayListError: "Enter valid playlist name",
+      });
+
+    const isPlaylistNameAlreadyPresent = await prisma.playlists.findFirst({
+      where: { usersId: userId, name: newPlaylistName },
+    });
+
+    if (isPlaylistNameAlreadyPresent !== null) {
+      return badRequest<ActionData>({
+        newPlayListError: `There is already playlist with name ${newPlaylistName}, Please choose another name`,
+      });
+    }
+
+    await prisma.playlists.create({
+      data: { name: newPlaylistName, usersId: userId },
+    });
+  } else if (actionType === "deletePlaylist") {
+    console.log("I am here");
+  } else if (actionType === "startPlaylist") {
+    console.log("I am here");
+  } else if (actionType === "editPlaylist") {
   }
 
-  await prisma.playlists.create({
-    data: { name: newPlaylistName, usersId: userId },
-  });
-
-  return json<ActionData>({ newPlayListValue: "" });
+  return json<ActionData>({});
 };
 
 export default function HomePage() {
@@ -82,13 +97,13 @@ export default function HomePage() {
         <div>
           <label htmlFor="new-playlist-input" hidden />
           <div className="flex gap-x-2">
+            <input hidden name="actionType" value="createPlaylist" readOnly />
             <input
               type="text"
               id="new-playlist-input"
               name="newPlaylist"
               className="rounded-md border-2 border-gray-400 px-2 py-1 focus:outline-2 focus:outline-blue-400 grow"
               placeholder="New Playlist name"
-              defaultValue={actionData?.newPlayListValue}
             />
             <button
               type="submit"
@@ -99,7 +114,7 @@ export default function HomePage() {
           </div>
         </div>
       </Form>
-      <ol>
+      <ol className="flex flex-col gap-y-2">
         {playlist.map((playlist) => {
           return <SinglePlaylist playlist={playlist} key={playlist.id} />;
         })}
