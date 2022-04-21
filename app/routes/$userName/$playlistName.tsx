@@ -1,11 +1,17 @@
+import { Music } from "@prisma/client";
 import { json, LoaderFunction, redirect } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { getUserName, requirePlaylists } from "~/server/prisma.server";
+import {
+  getUserName,
+  requireMusic,
+  requirePlaylists,
+} from "~/server/prisma.server";
 import { requireUserId } from "~/server/userSession.server";
 
 type LoaderData = {
   username: string;
   playlistName: string;
+  music: Music[];
 };
 
 export const loader: LoaderFunction = async ({ request, params }) => {
@@ -20,13 +26,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       "Make sure that nested Routing has hierarchy $userName/$playlistName.tsx"
     );
   }
+
   const hasPlaylist = playlists.some((value) => value.name === playlistName);
 
   if (!hasPlaylist) {
     return redirect(`/${username}`);
   }
 
-  return json<LoaderData>({ username, playlistName });
+  const musics = await requireMusic(userId, playlistName, request);
+
+  return json<LoaderData>({ username, playlistName, music: musics });
 };
 
 export default function PlaylistPage() {

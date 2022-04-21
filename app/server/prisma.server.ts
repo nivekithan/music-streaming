@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { getUserId, logout, requireUserId } from "./userSession.server";
 
-
-export let prisma : PrismaClient;
+export let prisma: PrismaClient;
 
 declare global {
   var __db: PrismaClient | undefined;
@@ -53,4 +52,35 @@ export const getPlaylists = async (userId: string) => {
   if (userPlaylist === null) return null;
 
   return userPlaylist.playlists;
+};
+
+export const requireMusic = async (
+  userId: string,
+  playlistName: string,
+  request: Request
+) => {
+  const musics = await getMusics(userId, playlistName);
+
+  if (musics === null) {
+    throw await logout(request);
+  }
+
+  return musics;
+};
+
+export const getMusics = async (userId: string, playlistName: string) => {
+  const userPlaylist = await prisma.users.findUnique({
+    where: { userId },
+    select: {
+      playlists: { select: { music: true }, where: { name: playlistName } },
+    },
+  });
+
+  if (userPlaylist === null) {
+    return null;
+  }
+
+  console.log(userId, playlistName);
+
+  return userPlaylist.playlists[0].music;
 };
