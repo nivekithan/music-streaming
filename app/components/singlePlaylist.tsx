@@ -8,31 +8,30 @@ export type SinglePlaylistProps = {
 
 export const SinglePlaylist = ({ playlist }: SinglePlaylistProps) => {
   return (
-    <div className="px-3 py-2 bg-gray-200 bg-opacity-30 rounded-md flex justify-between content-center font-semibold border-2 border-gray-200 hover:border-blue-500">
-      <span className="grid place-content-center">{playlist.name}</span>
-      <div className="flex gap-x-2">
+    <Form method="post">
+      <div className="px-3 py-2 bg-gray-200 bg-opacity-30 rounded-md flex justify-between content-center font-semibold border-2 border-gray-200 hover:border-blue-500">
         <input hidden name="playListName" value={playlist.name} readOnly />
-        <div>
-          <input hidden name="actionType" value="startPlaylist" readOnly />
+        <span className="grid place-content-center">{playlist.name}</span>
+        <div className="flex gap-x-2">
           <button
+            name="actionType"
+            value="startPlaylist"
             type="submit"
             className="p-1 bg-blue-100 border-[1px] border-blue-300 hover:bg-blue-200 rounded-md"
           >
             {MusicSvg}
           </button>
-        </div>
-        <div>
-          <input hidden name="actionType" value="openPlaylist" readOnly />
           <button
+            name="actionType"
+            value="openPlaylist"
             type="submit"
             className="p-1 bg-blue-100 border-[1px] border-blue-300 hover:bg-blue-200 rounded-md"
           >
             {OpenSvg}
           </button>
-        </div>
-        <div>
-          <input hidden name="actionType" value="deletePlaylist" readOnly />
           <button
+            name="actionType"
+            value="deletePlaylist"
             type="submit"
             className="p-1 bg-blue-100 border-[1px] border-blue-300 hover:bg-blue-200 rounded-md"
           >
@@ -40,6 +39,6 @@ export const SinglePlaylist = ({ playlist }: SinglePlaylistProps) => {
           </button>
         </div>
       </div>
-    </div>
+    </Form>
   );
 };
